@@ -5,6 +5,8 @@
  *
  * @product AM307(v2)
  */
+var RAW_VALUE = 0x01;
+
 // Chirpstack v4
 function decodeUplink(input) {
     var decoded = milesightDeviceDecode(input.bytes);
