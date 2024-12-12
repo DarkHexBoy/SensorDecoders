@@ -75,6 +75,11 @@ function milesightDeviceDecode(bytes) {
             decoded.target_temperature = readInt16LE(bytes.slice(i, i + 2)) / 10;
             i += 2;
         }
+        // TARGET TEMPERATURE 2 (ODM: 2706)
+        else if (channel_id === 0x0b && channel_type === 0x67) {
+            decoded.target_temperature_2 = readInt16LE(bytes.slice(i, i + 2)) / 10;
+            i += 2;
+        }
         // TEMPERATURE CONTROL
         else if (channel_id === 0x05 && channel_type === 0xe7) {
             var value = bytes[i];
@@ -125,17 +130,17 @@ function milesightDeviceDecode(bytes) {
         }
         // PLAN SETTINGS
         else if (channel_id === 0xff && channel_type === 0xc8) {
-            var plan_setting = {};
-            plan_setting.event = readPlanEventType(bytes[i]);
-            plan_setting.temperature_control_mode = readTemperatureControlMode(bytes[i + 1]);
-            plan_setting.fan_mode = readFanMode(bytes[i + 2]);
-            plan_setting.target_temperature = readUInt8(bytes[i + 3] & 0x7f);
-            plan_setting.temperature_unit = readTemperatureUnit(bytes[i + 3] >>> 7);
-            plan_setting.temperature_tolerance = readUInt8(bytes[i + 4]) / 10;
+            var plan_config = {};
+            plan_config.event = readPlanEventType(bytes[i]);
+            plan_config.temperature_control_mode = readTemperatureControlMode(bytes[i + 1]);
+            plan_config.fan_mode = readFanMode(bytes[i + 2]);
+            plan_config.target_temperature = readUInt8(bytes[i + 3] & 0x7f);
+            plan_config.temperature_unit = readTemperatureUnit(bytes[i + 3] >>> 7);
+            plan_config.temperature_tolerance = readUInt8(bytes[i + 4]) / 10;
             i += 5;
 
-            decoded.plan_settings = decoded.plan_settings || [];
-            decoded.plan_settings.push(plan_setting);
+            decoded.plan_config = decoded.plan_config || [];
+            decoded.plan_config.push(plan_config);
         }
         // WIRES
         else if (channel_id === 0xff && channel_type === 0xca) {
@@ -170,6 +175,14 @@ function milesightDeviceDecode(bytes) {
             decoded.humidity_sensor_status = readSensorStatus(bytes[i]);
             i += 1;
         }
+        // DUAL TEMPERATURE PLAN CONFIG
+        else if (channel_id === 0xf9 && channel_type === 0x59) {
+            var config = readDualTemperaturePlanConfig(bytes.slice(i, i + 9));
+            i += 9;
+
+            decoded.dual_temperature_plan_config = decoded.dual_temperature_plan_config || [];
+            decoded.dual_temperature_plan_config.push(config);
+        }
         // HISTORICAL DATA
         else if (channel_id === 0x20 && channel_type === 0xce) {
             var timestamp = readUInt32LE(bytes.slice(i, i + 4));
@@ -193,6 +206,30 @@ function milesightDeviceDecode(bytes) {
 
             decoded.history = decoded.history || [];
             decoded.history.push(data);
+        }
+        // HISTORICAL DATA (ODM: 2706)
+        else if (channel_id === 0x21 && channel_type === 0xce) {
+            var timestamp = readUInt32LE(bytes.slice(i, i + 4));
+            var value1 = readUInt16LE(bytes.slice(i + 4, i + 6));
+            var value2 = readUInt16LE(bytes.slice(i + 6, i + 8));
+            var value3 = readUInt16LE(bytes.slice(i + 8, i + 10));
+
+            var data = { timestamp: timestamp };
+            data.fan_mode = readFanMode(value1 & 0x03);
+            data.fan_status = readFanStatus((value1 >>> 2) & 0x03);
+            data.system_status = readOnOffStatus((value1 >>> 4) & 0x01);
+            var temperature = ((value1 >>> 5) & 0x7ff) / 10 - 100;
+            data.temperature = Number(temperature.toFixed(1));
+            data.temperature_control_mode = readTemperatureControlMode(value2 & 0x03);
+            var target_temperature = ((value2 >>> 5) & 0x7ff) / 10 - 100;
+            data.target_temperature = Number(target_temperature.toFixed(1));
+            data.temperature_control_status = readTemperatureControlStatus(value3 & 0x1f);
+            data.target_temperature_2 = ((value3 >>> 5) & 0x7ff) / 10 - 100;
+            data.target_temperature_2 = Number(target_temperature_2.toFixed(1));
+
+            decoded.history = decoded.history || [];
+            decoded.history.push(data);
+            i += 10;
         }
         // DOWNLINK RESPONSE
         else if (channel_id === 0xfe) {
@@ -415,6 +452,8 @@ function readTemperatureControlMode(type) {
         1: "em heat",
         2: "cool",
         3: "auto",
+        4: "auto heat",
+        5: "auto cool",
     };
     return getValue(temperature_control_mode_map, type);
 }
@@ -429,6 +468,7 @@ function readTemperatureControlStatus(type) {
         5: "em heat",
         6: "stage-1 cool",
         7: "stage-2 cool",
+        8: "stage-5 heat",
     };
     return getValue(temperature_control_status_map, type);
 }
@@ -526,6 +566,32 @@ function readMonth(type) {
 function readWeekDay(type) {
     var week_day_map = { 1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday", 5: "Friday", 6: "Saturday", 7: "Sunday" };
     return getValue(week_day_map, type);
+}
+
+function readDualTemperaturePlanConfig(bytes) {
+    var offset = 0;
+
+    var config = {};
+    config.type = readPlanEventType(readUInt8(bytes[offset]));
+    config.temperature_control_mode = readTemperatureControlMode(readUInt8(bytes[offset + 1]));
+    config.fan_mode = readFanMode(readUInt8(bytes[offset + 2]));
+    var heat_target_temperature_value = readUInt16LE(bytes.slice(offset + 3, offset + 5));
+    if (heat_target_temperature_value !== 0xffff) {
+        config.heat_target_temperature = readUInt16LE(bytes.slice(offset + 3, offset + 5)) / 10;
+    }
+    var heat_temperature_tolerance_value = readUInt8(bytes[offset + 5]);
+    if (heat_temperature_tolerance_value !== 0xff) {
+        config.heat_temperature_tolerance = heat_temperature_tolerance_value / 10;
+    }
+    var cool_target_temperature_value = readUInt16LE(bytes.slice(offset + 6, offset + 8));
+    if (cool_target_temperature_value !== 0xffff) {
+        config.cool_target_temperature = readUInt16LE(bytes.slice(offset + 6, offset + 8)) / 10;
+    }
+    var cool_temperature_tolerance_value = readUInt8(bytes[offset + 8]);
+    if (cool_temperature_tolerance_value !== 0xff) {
+        config.cool_temperature_tolerance = cool_temperature_tolerance_value / 10;
+    }
+    return config;
 }
 
 function handle_downlink_response(channel_type, bytes, offset) {
@@ -867,6 +933,50 @@ function handle_downlink_response_ext(channel_type, bytes, offset) {
                 }
             } else {
                 throw new Error("dehumidify control failed");
+            }
+            offset += 3;
+            break;
+        case 0x42:
+            var target_temperature_range_result = readUInt8(bytes[offset + 5]);
+            if (target_temperature_range_result === 0) {
+                decoded.target_temperature_range = {};
+                decoded.target_temperature_range.min = readInt16LE(bytes.slice(offset + 1, offset + 3)) / 10;
+                decoded.target_temperature_range.max = readInt16LE(bytes.slice(offset + 3, offset + 5)) / 10;
+            }
+            offset += 6;
+            break;
+        case 0x57:
+            var temperature_tolerance_2_result = readUInt8(bytes[offset + 1]);
+            if (temperature_tolerance_2_result === 0) {
+                decoded.temperature_tolerance_2 = readUInt8(bytes[offset]) / 10;
+            }
+            offset += 2;
+            break;
+        case 0x58:
+            var target_temperature_dual_result = readUInt8(bytes[offset + 1]);
+            if (target_temperature_dual_result === 0) {
+                decoded.target_temperature_dual = readEnableStatus(readUInt8(bytes[offset]));
+            }
+            offset += 2;
+            break;
+        case 0x59:
+            var target_temperature_dual_result = readUInt8(bytes[offset + 9]);
+            if (target_temperature_dual_result === 0) {
+                decoded.target_temperature_dual = readDualTemperaturePlanConfig(bytes.slice(offset, offset + 9));
+            }
+            offset += 10;
+            break;
+        case 0x5a:
+            var tolerance_result = readUInt8(bytes[offset + 2]);
+            if (tolerance_result === 0) {
+                decoded.dual_temperature_tolerance = decoded.dual_temperature_tolerance || {};
+                var tolerance_index = readUInt8(bytes[offset]);
+                var tolerance_value = readUInt8(bytes[offset + 1]) / 10;
+                if (tolerance_index === 0x00) {
+                    decoded.dual_temperature_tolerance.heat_tolerance = tolerance_value;
+                } else if (tolerance_index === 0x01) {
+                    decoded.dual_temperature_tolerance.cool_tolerance = tolerance_value;
+                }
             }
             offset += 3;
             break;
