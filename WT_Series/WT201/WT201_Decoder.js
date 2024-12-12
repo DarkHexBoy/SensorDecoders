@@ -123,19 +123,19 @@ function milesightDeviceDecode(bytes) {
             decoded.plan_schedule = decoded.plan_schedule || [];
             decoded.plan_schedule.push(schedule);
         }
-        // PLAN SETTINGS
+        // PLAN CONFIG
         else if (channel_id === 0xff && channel_type === 0xc8) {
-            var plan_setting = {};
-            plan_setting.event = readPlanEventType(bytes[i]);
-            plan_setting.temperature_control_mode = readTemperatureControlMode(bytes[i + 1]);
-            plan_setting.fan_mode = readFanMode(bytes[i + 2]);
-            plan_setting.target_temperature = readUInt8(bytes[i + 3] & 0x7f);
-            plan_setting.temperature_unit = readTemperatureUnit(bytes[i + 3] >>> 7);
-            plan_setting.temperature_tolerance = readUInt8(bytes[i + 4]) / 10;
+            var plan_config = {};
+            plan_config.event = readPlanEventType(bytes[i]);
+            plan_config.temperature_control_mode = readTemperatureControlMode(bytes[i + 1]);
+            plan_config.fan_mode = readFanMode(bytes[i + 2]);
+            plan_config.target_temperature = readUInt8(bytes[i + 3] & 0x7f);
+            plan_config.temperature_unit = readTemperatureUnit(bytes[i + 3] >>> 7);
+            plan_config.temperature_tolerance = readUInt8(bytes[i + 4]) / 10;
             i += 5;
 
-            decoded.plan_settings = decoded.plan_settings || [];
-            decoded.plan_settings.push(plan_setting);
+            decoded.plan_config = decoded.plan_config || [];
+            decoded.plan_config.push(plan_config);
         }
         // WIRES
         else if (channel_id === 0xff && channel_type === 0xca) {
@@ -281,7 +281,7 @@ function readLoRaWANClass(type) {
         0: "Class A",
         1: "Class B",
         2: "Class C",
-        3: "ClassCtoB",
+        3: "Class CtoB",
     };
     return getValue(lorawan_class_map, type);
 }
@@ -507,14 +507,11 @@ function readTemperatureControlSupportStatus(heat_mode, cool_mode) {
 }
 
 function readWeekRecycleSettings(type) {
+    var week_day_bits_offset = { monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6, sunday: 7 };
     var week_enable = {};
-    week_enable.monday = readEnableStatus((type >>> 1) & 0x01);
-    week_enable.tuesday = readEnableStatus((type >>> 2) & 0x01);
-    week_enable.wednesday = readEnableStatus((type >>> 3) & 0x01);
-    week_enable.thursday = readEnableStatus((type >>> 4) & 0x01);
-    week_enable.friday = readEnableStatus((type >>> 5) & 0x01);
-    week_enable.saturday = readEnableStatus((type >>> 6) & 0x01);
-    week_enable.sunday = readEnableStatus((type >>> 7) & 0x01);
+    for (var day in week_day_bits_offset) {
+        week_enable[day] = readEnableStatus((type >>> week_day_bits_offset[day]) & 0x01);
+    }
     return week_enable;
 }
 
@@ -526,6 +523,11 @@ function readMonth(type) {
 function readWeekDay(type) {
     var week_day_map = { 1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday", 5: "Friday", 6: "Saturday", 7: "Sunday" };
     return getValue(week_day_map, type);
+}
+
+function readTimeZone(timezone) {
+    var timezone_map = { "-720": "UTC-12", "-660": "UTC-11", "-600": "UTC-10", "-570": "UTC-9:30", "-540": "UTC-9", "-480": "UTC-8", "-420": "UTC-7", "-360": "UTC-6", "-300": "UTC-5", "-240": "UTC-4", "-210": "UTC-3:30", "-180": "UTC-3", "-120": "UTC-2", "-60": "UTC-1", 0: "UTC", 60: "UTC+1", 120: "UTC+2", 180: "UTC+3", 210: "UTC+3:30", 240: "UTC+4", 270: "UTC+4:30", 300: "UTC+5", 330: "UTC+5:30", 345: "UTC+5:45", 360: "UTC+6", 390: "UTC+6:30", 420: "UTC+7", 480: "UTC+8", 540: "UTC+9", 570: "UTC+9:30", 600: "UTC+10", 630: "UTC+10:30", 660: "UTC+11", 720: "UTC+12", 765: "UTC+12:45", 780: "UTC+13", 840: "UTC+14" };
+    return getValue(timezone_map, timezone);
 }
 
 function handle_downlink_response(channel_type, bytes, offset) {
@@ -687,7 +689,7 @@ function handle_downlink_response(channel_type, bytes, offset) {
             offset += 10;
             break;
         case 0xbd: // timezone
-            decoded.timezone = readInt16LE(bytes.slice(offset, offset + 2));
+            decoded.timezone = readTimeZone(readInt16LE(bytes.slice(offset, offset + 2)));
             offset += 2;
             break;
         case 0xc1:

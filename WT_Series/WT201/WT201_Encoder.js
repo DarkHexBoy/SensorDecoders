@@ -259,12 +259,12 @@ function syncTime(sync_time) {
 
 /**
  * set timezone
- * @param {number} timezone unit: minute, convert: "hh:mm" -> "hh * 60 + mm", values: ( -720: UTC-12, -660: UTC-11, -600: UTC-10, -570: UTC-9:30, -540: UTC-9, -480: UTC-8, -420: UTC-7, -360: UTC-6, -300: UTC-5, -240: UTC-4, -210: UTC-3:30, -180: UTC-3, -120: UTC-2, -60: UTC-1, 0: UTC, 60: UTC+1, 120: UTC+2, 180: UTC+3, 240: UTC+4, 300: UTC+5, 360: UTC+6, 420: UTC+7, 480: UTC+8, 540: UTC+9, 570: UTC+9:30, 600: UTC+10, 660: UTC+11, 720: UTC+12, 750: UTC+12:45, 780: UTC+13, 840: UTC+14 )
+ * @param {number} timezone unit: minute, convert: "hh:mm" -> "hh * 60 + mm", values: ( -720: UTC-12, -660: UTC-11, -600: UTC-10, -570: UTC-9:30, -540: UTC-9, -480: UTC-8, -420: UTC-7, -360: UTC-6, -300: UTC-5, -240: UTC-4, -210: UTC-3:30, -180: UTC-3, -120: UTC-2, -60: UTC-1, 0: UTC, 60: UTC+1, 120: UTC+2, 180: UTC+3, 240: UTC+4, 300: UTC+5, 360: UTC+6, 420: UTC+7, 480: UTC+8, 540: UTC+9, 570: UTC+9:30, 600: UTC+10, 660: UTC+11, 720: UTC+12, 765: UTC+12:45, 780: UTC+13, 840: UTC+14 )
  * @example { "timezone": 8 }
  * @example { "timezone": -4 }
  */
 function setTimezone(timezone) {
-    var timezone_map = { "-720": "UTC-12", "-660": "UTC-11", "-600": "UTC-10", "-570": "UTC-9:30", "-540": "UTC-9", "-480": "UTC-8", "-420": "UTC-7", "-360": "UTC-6", "-300": "UTC-5", "-240": "UTC-4", "-210": "UTC-3:30", "-180": "UTC-3", "-120": "UTC-2", "-60": "UTC-1", 0: "UTC", 60: "UTC+1", 120: "UTC+2", 180: "UTC+3", 210: "UTC+3:30", 240: "UTC+4", 270: "UTC+4:30", 300: "UTC+5", 330: "UTC+5:30", 345: "UTC+5:45", 360: "UTC+6", 390: "UTC+6:30", 420: "UTC+7", 480: "UTC+8", 540: "UTC+9", 570: "UTC+9:30", 600: "UTC+10", 630: "UTC+10:30", 660: "UTC+11", 720: "UTC+12", 750: "UTC+12:45", 780: "UTC+13", 840: "UTC+14" };
+    var timezone_map = { "-720": "UTC-12", "-660": "UTC-11", "-600": "UTC-10", "-570": "UTC-9:30", "-540": "UTC-9", "-480": "UTC-8", "-420": "UTC-7", "-360": "UTC-6", "-300": "UTC-5", "-240": "UTC-4", "-210": "UTC-3:30", "-180": "UTC-3", "-120": "UTC-2", "-60": "UTC-1", 0: "UTC", 60: "UTC+1", 120: "UTC+2", 180: "UTC+3", 210: "UTC+3:30", 240: "UTC+4", 270: "UTC+4:30", 300: "UTC+5", 330: "UTC+5:30", 345: "UTC+5:45", 360: "UTC+6", 390: "UTC+6:30", 420: "UTC+7", 480: "UTC+8", 540: "UTC+9", 570: "UTC+9:30", 600: "UTC+10", 630: "UTC+10:30", 660: "UTC+11", 720: "UTC+12", 765: "UTC+12:45", 780: "UTC+13", 840: "UTC+14" };
     var timezone_values = getValues(timezone_map);
     if (timezone_values.indexOf(timezone) === -1) {
         throw new Error("timezone must be one of " + timezone_values.join(", "));
@@ -821,27 +821,27 @@ function setPlanMode(plan_mode) {
 
 /**
  * set plan schedule
- * @param {object} schedule
- * @param {string} schedule.type values: (0: wake, 1: away, 2: home, 3: sleep)
- * @param {number} schedule.id range: [1, 16]
- * @param {number} schedule.enable values: (0: disable, 1: enable)
- * @param {object} schedule.week_recycle
- * @param {number} schedule.week_recycle.monday values: (0: disable, 1: enable)
- * @param {number} schedule.week_recycle.tuesday values: (0: disable, 1: enable)
- * @param {number} schedule.week_recycle.wednesday values: (0: disable, 1: enable)
- * @param {number} schedule.week_recycle.thursday values: (0: disable, 1: enable)
- * @param {number} schedule.week_recycle.friday values: (0: disable, 1: enable)
- * @param {number} schedule.week_recycle.saturday values: (0: disable, 1: enable)
- * @param {number} schedule.week_recycle.sunday values: (0: disable, 1: enable)
- * @param {number} schedule.time unit: minute, convert: "hh:mm" -> "hh * 60 + mm"
+ * @param {object} plan_schedule
+ * @param {string} plan_schedule.type values: (0: wake, 1: away, 2: home, 3: sleep)
+ * @param {number} plan_schedule.id range: [1, 16]
+ * @param {number} plan_schedule.enable values: (0: disable, 1: enable)
+ * @param {object} plan_schedule.week_recycle
+ * @param {number} plan_schedule.week_recycle.monday values: (0: disable, 1: enable)
+ * @param {number} plan_schedule.week_recycle.tuesday values: (0: disable, 1: enable)
+ * @param {number} plan_schedule.week_recycle.wednesday values: (0: disable, 1: enable)
+ * @param {number} plan_schedule.week_recycle.thursday values: (0: disable, 1: enable)
+ * @param {number} plan_schedule.week_recycle.friday values: (0: disable, 1: enable)
+ * @param {number} plan_schedule.week_recycle.saturday values: (0: disable, 1: enable)
+ * @param {number} plan_schedule.week_recycle.sunday values: (0: disable, 1: enable)
+ * @param {number} plan_schedule.time unit: minute, convert: "hh:mm" -> "hh * 60 + mm"
  * @example { "plan_schedule": [{ "type": 0, "id": 0, "enable": 1, "week_recycle": { "monday": 1, "tuesday": 0, "wednesday": 1, "thursday": 0, "friday": 1, "saturday": 0, "sunday": 1 }, "time": 240 }] }
  */
-function setPlanSchedule(schedule) {
-    var type = schedule.type;
-    var id = schedule.id;
-    var enable = schedule.enable;
-    var week_recycle = schedule.week_recycle;
-    var time = schedule.time;
+function setPlanSchedule(plan_schedule) {
+    var type = plan_schedule.type;
+    var id = plan_schedule.id;
+    var enable = plan_schedule.enable;
+    var week_recycle = plan_schedule.week_recycle;
+    var time = plan_schedule.time;
 
     var plan_schedule_type_map = { 0: "wake", 1: "away", 2: "home", 3: "sleep" };
     var plan_schedule_type_values = getValues(plan_schedule_type_map);
@@ -863,48 +863,13 @@ function setPlanSchedule(schedule) {
     var enable_map = { 0: "disable", 1: "enable" };
     var enable_values = getValues(enable_map);
 
+    var week_day_bits_offset = { monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6, sunday: 7 };
     var days = 0x00;
-    if ("monday" in week_recycle) {
-        if (enable_values.indexOf(week_recycle.monday) === -1) {
-            throw new Error("plan_schedule._item.week_recycle.monday must be one of " + enable_values.join(", "));
+    for (var day in week_recycle) {
+        if (enable_values.indexOf(week_recycle[day]) === -1) {
+            throw new Error("plan_schedule._item.week_recycle." + day + " must be one of " + enable_values.join(", "));
         }
-        days |= getValue(enable_map, week_recycle.monday) << 1;
-    }
-    if ("tuesday" in week_recycle) {
-        if (enable_values.indexOf(week_recycle.tuesday) === -1) {
-            throw new Error("plan_schedule._item.week_recycle.tuesday must be one of " + enable_values.join(", "));
-        }
-        days |= getValue(enable_map, week_recycle.tuesday) << 2;
-    }
-    if ("wednesday" in week_recycle) {
-        if (enable_values.indexOf(week_recycle.wednesday) === -1) {
-            throw new Error("plan_schedule._item.week_recycle.wednesday must be one of " + enable_values.join(", "));
-        }
-        days |= getValue(enable_map, week_recycle.wednesday) << 3;
-    }
-    if ("thursday" in week_recycle) {
-        if (enable_values.indexOf(week_recycle.thursday) === -1) {
-            throw new Error("plan_schedule._item.week_recycle.thursday must be one of " + enable_values.join(", "));
-        }
-        days |= getValue(enable_map, week_recycle.thursday) << 4;
-    }
-    if ("friday" in week_recycle) {
-        if (enable_values.indexOf(week_recycle.friday) === -1) {
-            throw new Error("plan_schedule._item.week_recycle.friday must be one of " + enable_values.join(", "));
-        }
-        days |= getValue(enable_map, week_recycle.friday) << 5;
-    }
-    if ("saturday" in week_recycle) {
-        if (enable_values.indexOf(week_recycle.saturday) === -1) {
-            throw new Error("plan_schedule._item.week_recycle.saturday must be one of " + enable_values.join(", "));
-        }
-        days |= getValue(enable_map, week_recycle.saturday) << 6;
-    }
-    if ("sunday" in week_recycle) {
-        if (enable_values.indexOf(week_recycle.sunday) === -1) {
-            throw new Error("plan_schedule._item.week_recycle.sunday must be one of " + enable_values.join(", "));
-        }
-        days |= getValue(enable_map, week_recycle.sunday) << 7;
+        days |= getValue(enable_map, week_recycle[day]) << week_day_bits_offset[day];
     }
 
     var buffer = new Buffer(8);
@@ -1156,7 +1121,7 @@ function setChildLock(child_lock_config) {
  * @param {number} wires.aux values: (0: on, 1: off)
  * @param {number} wires.y2 values: (0: on, 1: off)
  * @param {number} wires.gl values: (0: on, 1: off)
- * @param {number} wires.ob_mode values: (0: on cool, 1: on heat, 3: hold)
+ * @param {number} ob_mode values: (0: on cool, 1: on heat, 3: hold)
  * @example { "wires": { "y1": 1, "gh": 0, "ob": 1, "w1": 1, "e": 1, "di": 0, "pek": 1, "w2": 0, "aux": 0, "y2": 1, "gl": 0 }, "ob_mode": 0 }
  */
 function setWires(wires, ob_mode) {
