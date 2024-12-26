@@ -5,6 +5,8 @@
  *
  * @product WS558
  */
+var RAW_VALUE = 0x01;
+
 // Chirpstack v4
 function decodeUplink(input) {
     var decoded = milesightDeviceDecode(input.bytes);
@@ -27,8 +29,49 @@ function milesightDeviceDecode(bytes) {
     for (var i = 0; i < bytes.length; ) {
         var channel_id = bytes[i++];
         var channel_type = bytes[i++];
+
+        // IPSO VERSION
+        if (channel_id === 0xff && channel_type === 0x01) {
+            decoded.ipso_version = readProtocolVersion(bytes[i]);
+            i += 1;
+        }
+        // HARDWARE VERSION
+        else if (channel_id === 0xff && channel_type === 0x09) {
+            decoded.hardware_version = readHardwareVersion(bytes.slice(i, i + 2));
+            i += 2;
+        }
+        // FIRMWARE VERSION
+        else if (channel_id === 0xff && channel_type === 0x0a) {
+            decoded.firmware_version = readFirmwareVersion(bytes.slice(i, i + 2));
+            i += 2;
+        }
+        // TSL VERSION
+        else if (channel_id === 0xff && channel_type === 0xff) {
+            decoded.tsl_version = readTslVersion(bytes.slice(i, i + 2));
+            i += 2;
+        }
+        // SERIAL NUMBER
+        else if (channel_id === 0xff && channel_type === 0x16) {
+            decoded.sn = readSerialNumber(bytes.slice(i, i + 8));
+            i += 8;
+        }
+        // LORAWAN CLASS TYPE
+        else if (channel_id === 0xff && channel_type === 0x0f) {
+            decoded.lorawan_class = readLoRaWANClass(bytes[i]);
+            i += 1;
+        }
+        // RESET EVENT
+        else if (channel_id === 0xff && channel_type === 0xfe) {
+            decoded.reset_event = readResetEvent(1);
+            i += 1;
+        }
+        // DEVICE STATUS
+        else if (channel_id === 0xff && channel_type === 0x0b) {
+            decoded.device_status = readDeviceStatus(1);
+            i += 1;
+        }
         // VOLTAGE
-        if (channel_id === 0x03 && channel_type === 0x74) {
+        else if (channel_id === 0x03 && channel_type === 0x74) {
             decoded.voltage = readUInt16LE(bytes.slice(i, i + 2)) / 10;
             i += 2;
         }
@@ -39,7 +82,7 @@ function milesightDeviceDecode(bytes) {
         }
         // POWER FACTOR
         else if (channel_id === 0x05 && channel_type === 0x81) {
-            decoded.power_factor = bytes[i];
+            decoded.power_factor = readUInt8(bytes[i]);
             i += 1;
         }
         // POWER CONSUMPTION
@@ -59,10 +102,15 @@ function milesightDeviceDecode(bytes) {
             // output all switch status
             for (var idx = 0; idx < 8; idx++) {
                 var switchTag = "switch_" + (idx + 1);
-                decoded[switchTag] = (switchFlags >> idx) & (1 === 1) ? "on" : "off";
+                decoded[switchTag] = readSwitchStatus((switchFlags >> idx) & 1);
             }
 
             i += 2;
+        }
+        // POWER CONSUMPTION ENABLE
+        else if (channel_id === 0xff && channel_type === 0x26) {
+            decoded.power_consumption_enable = readEnableStatus(bytes[i]);
+            i += 1;
         } else {
             break;
         }
@@ -101,4 +149,83 @@ function readUInt32LE(bytes) {
 function readInt32LE(bytes) {
     var ref = readUInt32LE(bytes);
     return ref > 0x7fffffff ? ref - 0x100000000 : ref;
+}
+
+function getValue(map, key) {
+    if (RAW_VALUE) return key;
+
+    var value = map[key];
+    if (!value) value = "unknown";
+    return value;
+}
+
+function readProtocolVersion(bytes) {
+    var major = (bytes & 0xf0) >> 4;
+    var minor = bytes & 0x0f;
+    return "v" + major + "." + minor;
+}
+
+function readHardwareVersion(bytes) {
+    var major = bytes[0] & 0xff;
+    var minor = (bytes[1] & 0xff) >> 4;
+    return "v" + major + "." + minor;
+}
+
+function readFirmwareVersion(bytes) {
+    var major = bytes[0] & 0xff;
+    var minor = bytes[1] & 0xff;
+    return "v" + major + "." + minor;
+}
+
+function readTslVersion(bytes) {
+    var major = bytes[0] & 0xff;
+    var minor = bytes[1] & 0xff;
+    return "v" + major + "." + minor;
+}
+
+function readSerialNumber(bytes) {
+    var temp = [];
+    for (var idx = 0; idx < bytes.length; idx++) {
+        temp.push(("0" + (bytes[idx] & 0xff).toString(16)).slice(-2));
+    }
+    return temp.join("");
+}
+
+function readLoRaWANClass(type) {
+    var class_map = {
+        0: "Class A",
+        1: "Class B",
+        2: "Class C",
+        3: "Class CtoB",
+    };
+    return getValue(class_map, type);
+}
+
+function readResetEvent(status) {
+    var status_map = {
+        0: "normal",
+        1: "reset",
+    };
+    return getValue(status_map, status);
+}
+
+function readDeviceStatus(status) {
+    var status_map = {
+        0: "off",
+        1: "on",
+    };
+    return getValue(status_map, status);
+}
+
+function readSwitchStatus(status) {
+    var status_map = {
+        0: "off",
+        1: "on",
+    };
+    return getValue(status_map, status);
+}
+
+function readEnableStatus(status) {
+    var enable_map = { 0: "disable", 1: "enable" };
+    return getValue(enable_map, status);
 }
