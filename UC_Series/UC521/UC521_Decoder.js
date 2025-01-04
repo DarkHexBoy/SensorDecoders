@@ -215,209 +215,6 @@ function milesightDeviceDecode(bytes) {
     return decoded;
 }
 
-function readUInt8(bytes) {
-    return bytes & 0xff;
-}
-
-function readInt8(bytes) {
-    var ref = readUInt8(bytes);
-    return ref > 0x7f ? ref - 0x100 : ref;
-}
-
-function readUInt16LE(bytes) {
-    var value = (bytes[1] << 8) + bytes[0];
-    return value & 0xffff;
-}
-
-function readInt16LE(bytes) {
-    var ref = readUInt16LE(bytes);
-    return ref > 0x7fff ? ref - 0x10000 : ref;
-}
-
-function readUInt32LE(bytes) {
-    var value = (bytes[3] << 24) + (bytes[2] << 16) + (bytes[1] << 8) + bytes[0];
-    return (value & 0xffffffff) >>> 0;
-}
-
-function readInt32LE(bytes) {
-    var ref = readUInt32LE(bytes);
-    return ref > 0x7fffffff ? ref - 0x100000000 : ref;
-}
-
-function readFloatLE(bytes) {
-    var bits = (bytes[3] << 24) | (bytes[2] << 16) | (bytes[1] << 8) | bytes[0];
-    var sign = bits >>> 31 === 0 ? 1.0 : -1.0;
-    var e = (bits >>> 23) & 0xff;
-    var m = e === 0 ? (bits & 0x7fffff) << 1 : (bits & 0x7fffff) | 0x800000;
-    var f = sign * m * Math.pow(2, e - 150);
-    return f;
-}
-
-function readAscii(bytes) {
-    var str = "";
-    for (var i = 0; i < bytes.length; i++) {
-        if (bytes[i] === 0x00) {
-            break;
-        }
-        str += String.fromCharCode(bytes[i]);
-    }
-    return str;
-}
-
-function getValue(map, key) {
-    if (RAW_VALUE) return key;
-
-    var value = map[key];
-    if (!value) value = "unknown";
-    return value;
-}
-
-function includes(items, item) {
-    var size = items.length;
-    for (var i = 0; i < size; i++) {
-        if (items[i] == item) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function readProtocolVersion(bytes) {
-    var major = (bytes & 0xf0) >> 4;
-    var minor = bytes & 0x0f;
-    return "v" + major + "." + minor;
-}
-
-function readHardwareVersion(bytes) {
-    var major = bytes[0] & 0xff;
-    var minor = (bytes[1] & 0xff) >> 4;
-    return "v" + major + "." + minor;
-}
-
-function readFirmwareVersion(bytes) {
-    var major = bytes[0] & 0xff;
-    var minor = bytes[1] & 0xff;
-    return "v" + major + "." + minor;
-}
-
-function readTslVersion(bytes) {
-    var major = bytes[0] & 0xff;
-    var minor = bytes[1] & 0xff;
-    return "v" + major + "." + minor;
-}
-
-function readSerialNumber(bytes) {
-    var temp = [];
-    for (var idx = 0; idx < bytes.length; idx++) {
-        temp.push(("0" + (bytes[idx] & 0xff).toString(16)).slice(-2));
-    }
-    return temp.join("");
-}
-
-function readLoRaWANClass(type) {
-    var class_map = {
-        0: "Class A",
-        1: "Class B",
-        2: "Class C",
-        3: "Class CtoB",
-    };
-    return getValue(class_map, type);
-}
-
-function readResetEvent(status) {
-    var status_map = {
-        0: "normal",
-        1: "reset",
-    };
-    return getValue(status_map, status);
-}
-
-function readDeviceStatus(status) {
-    var status_map = {
-        0: "off",
-        1: "on",
-    };
-    return getValue(status_map, status);
-}
-
-function readGPIOStatus(status) {
-    var status_map = {
-        0: "low",
-        1: "high",
-    };
-    return getValue(status_map, status);
-}
-
-function readSourceType(bytes) {
-    var source_map = {
-        0: "every change",
-        1: "valve 1 opening",
-        2: "valve 2 opening",
-        3: "valve 1 opening or valve 2 opening",
-    };
-    return getValue(source_map, bytes);
-}
-
-function readConditionType(bytes) {
-    var condition_map = {
-        1: "pipe_pressure less than min",
-        2: "pipe_pressure more than max",
-        3: "pipe_pressure between min and max",
-        4: "pipe_pressure out of min and max",
-    };
-    return getValue(condition_map, bytes);
-}
-
-function readPressureAlarmType(bytes) {
-    var alarm_map = {
-        0: "pipe pressure threshold alarm release",
-        1: "pipe pressure threshold alarm",
-    };
-    return getValue(alarm_map, bytes);
-}
-
-function readCalibrationResult(status) {
-    var status_map = {
-        0: "failed",
-        1: "success",
-    };
-    return getValue(status_map, status);
-}
-
-function readValveType(type) {
-    var type_map = {
-        0: "2-way ball valve",
-        1: "3-way ball valve",
-    };
-    return getValue(type_map, type);
-}
-
-function readValveDirection(direction) {
-    var direction_map = {
-        0: "left",
-        1: "right",
-    };
-    return getValue(direction_map, direction);
-}
-
-function readValveSensorStatus(status) {
-    var status_map = {
-        0: "low battery power",
-        1: "shutdown after getting io feedback",
-        2: "incorrect opening time",
-        3: "timeout",
-        4: "valve stall",
-    };
-    return getValue(status_map, status);
-}
-
-function readPressureSensorStatus(status) {
-    var status_map = {
-        1: "read error",
-    };
-    return getValue(status_map, status);
-}
-
 function handle_downlink_response(channel_type, bytes, offset) {
     var decoded = {};
 
@@ -503,13 +300,6 @@ function handle_downlink_response(channel_type, bytes, offset) {
             decoded[valve_index_name] = readUInt32LE(bytes.slice(offset + 1, offset + 5));
             offset += 5;
             break;
-        case 0xbb: // collection_interval
-            var index = readUInt8(bytes[offset]);
-            var index_name = "pressure_" + index;
-            decoded.collection_interval = decoded.collection_interval || {};
-            decoded.collection_interval[index_name] = readUInt16LE(bytes.slice(offset + 1, offset + 3));
-            offset += 3;
-            break;
         case 0xbd: // timezone
             decoded.timezone = readTimeZone(readInt16LE(bytes.slice(offset, offset + 2)));
             offset += 2;
@@ -583,11 +373,138 @@ function handle_downlink_response_ext(channel_type, bytes, offset) {
             }
             offset += 5;
             break;
+        case 0x68:
+            var collection_interval_result = readUInt8(bytes[offset + 4]);
+            if (collection_interval_result === 0) {
+                var index = readUInt8(bytes[offset]);
+                var index_name = "pressure_" + index + "_collection_interval";
+                decoded[index_name] = {};
+                decoded[index_name].enable = readEnableStatus(readUInt8(bytes[offset + 1]));
+                decoded[index_name].collection_interval = readUInt16LE(bytes.slice(offset + 2, offset + 4));
+            }
+            offset += 5;
+            break;
         default:
             throw new Error("unknown downlink response");
     }
 
     return { data: decoded, offset: offset };
+}
+
+function readProtocolVersion(bytes) {
+    var major = (bytes & 0xf0) >> 4;
+    var minor = bytes & 0x0f;
+    return "v" + major + "." + minor;
+}
+
+function readHardwareVersion(bytes) {
+    var major = bytes[0] & 0xff;
+    var minor = (bytes[1] & 0xff) >> 4;
+    return "v" + major + "." + minor;
+}
+
+function readFirmwareVersion(bytes) {
+    var major = bytes[0] & 0xff;
+    var minor = bytes[1] & 0xff;
+    return "v" + major + "." + minor;
+}
+
+function readTslVersion(bytes) {
+    var major = bytes[0] & 0xff;
+    var minor = bytes[1] & 0xff;
+    return "v" + major + "." + minor;
+}
+
+function readSerialNumber(bytes) {
+    var temp = [];
+    for (var idx = 0; idx < bytes.length; idx++) {
+        temp.push(("0" + (bytes[idx] & 0xff).toString(16)).slice(-2));
+    }
+    return temp.join("");
+}
+
+function readLoRaWANClass(type) {
+    var class_map = {
+        0: "Class A",
+        1: "Class B",
+        2: "Class C",
+        3: "Class CtoB",
+    };
+    return getValue(class_map, type);
+}
+
+function readResetEvent(status) {
+    var status_map = { 0: "normal", 1: "reset" };
+    return getValue(status_map, status);
+}
+
+function readDeviceStatus(status) {
+    var status_map = { 0: "off", 1: "on" };
+    return getValue(status_map, status);
+}
+
+function readGPIOStatus(status) {
+    var status_map = { 0: "low", 1: "high" };
+    return getValue(status_map, status);
+}
+
+function readSourceType(bytes) {
+    var source_map = {
+        0: "every change",
+        1: "valve 1 opening",
+        2: "valve 2 opening",
+        3: "valve 1 opening or valve 2 opening",
+    };
+    return getValue(source_map, bytes);
+}
+
+function readConditionType(bytes) {
+    var condition_map = {
+        1: "pipe_pressure less than min",
+        2: "pipe_pressure more than max",
+        3: "pipe_pressure between min and max",
+        4: "pipe_pressure out of min and max",
+    };
+    return getValue(condition_map, bytes);
+}
+
+function readPressureAlarmType(bytes) {
+    var alarm_map = {
+        0: "pipe pressure threshold alarm release",
+        1: "pipe pressure threshold alarm",
+    };
+    return getValue(alarm_map, bytes);
+}
+
+function readCalibrationResult(status) {
+    var status_map = { 0: "failed", 1: "success" };
+    return getValue(status_map, status);
+}
+
+function readValveType(type) {
+    var type_map = { 0: "2-way ball valve", 1: "3-way ball valve" };
+    return getValue(type_map, type);
+}
+
+function readValveDirection(direction) {
+    var direction_map = { 0: "left", 1: "right" };
+    return getValue(direction_map, direction);
+}
+
+function readValveSensorStatus(status) {
+    var status_map = {
+        0: "low battery power",
+        1: "shutdown after getting io feedback",
+        2: "incorrect opening time",
+        3: "timeout",
+        4: "valve stall",
+    };
+    return getValue(status_map, status);
+}
+
+function readPressureSensorStatus(status) {
+    var status_map = { 1: "read error" };
+    return getValue(status_map, status);
 }
 
 function readTimeZone(timezone) {
@@ -732,6 +649,73 @@ function readRuleAction(bytes) {
 function readReportType(report_type_value) {
     var report_type_map = { 0: "valve 1", 1: "valve 2", 2: "custom message", 3: "pressure threshold alarm" };
     return getValue(report_type_map, report_type_value);
+}
+
+function readUInt8(bytes) {
+    return bytes & 0xff;
+}
+
+function readInt8(bytes) {
+    var ref = readUInt8(bytes);
+    return ref > 0x7f ? ref - 0x100 : ref;
+}
+
+function readUInt16LE(bytes) {
+    var value = (bytes[1] << 8) + bytes[0];
+    return value & 0xffff;
+}
+
+function readInt16LE(bytes) {
+    var ref = readUInt16LE(bytes);
+    return ref > 0x7fff ? ref - 0x10000 : ref;
+}
+
+function readUInt32LE(bytes) {
+    var value = (bytes[3] << 24) + (bytes[2] << 16) + (bytes[1] << 8) + bytes[0];
+    return (value & 0xffffffff) >>> 0;
+}
+
+function readInt32LE(bytes) {
+    var ref = readUInt32LE(bytes);
+    return ref > 0x7fffffff ? ref - 0x100000000 : ref;
+}
+
+function readFloatLE(bytes) {
+    var bits = (bytes[3] << 24) | (bytes[2] << 16) | (bytes[1] << 8) | bytes[0];
+    var sign = bits >>> 31 === 0 ? 1.0 : -1.0;
+    var e = (bits >>> 23) & 0xff;
+    var m = e === 0 ? (bits & 0x7fffff) << 1 : (bits & 0x7fffff) | 0x800000;
+    var f = sign * m * Math.pow(2, e - 150);
+    return f;
+}
+
+function readAscii(bytes) {
+    var str = "";
+    for (var i = 0; i < bytes.length; i++) {
+        if (bytes[i] === 0x00) {
+            break;
+        }
+        str += String.fromCharCode(bytes[i]);
+    }
+    return str;
+}
+
+function getValue(map, key) {
+    if (RAW_VALUE) return key;
+
+    var value = map[key];
+    if (!value) value = "unknown";
+    return value;
+}
+
+function includes(items, item) {
+    var size = items.length;
+    for (var i = 0; i < size; i++) {
+        if (items[i] == item) {
+            return true;
+        }
+    }
+    return false;
 }
 
 if (!Object.assign) {

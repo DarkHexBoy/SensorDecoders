@@ -35,8 +35,11 @@ function milesightDeviceEncode(payload) {
     if ("report_interval" in payload) {
         encoded = encoded.concat(setReportInterval(payload.report_interval));
     }
-    if ("collection_interval" in payload) {
-        encoded = encoded.concat(setCollectionInterval(payload.collection_interval));
+    if ("pressure_1_collection_interval" in payload) {
+        encoded = encoded.concat(setCollectionInterval(1, payload.pressure_1_collection_interval));
+    }
+    if ("pressure_2_collection_interval" in payload) {
+        encoded = encoded.concat(setCollectionInterval(2, payload.pressure_2_collection_interval));
     }
     if ("timezone" in payload) {
         encoded = encoded.concat(setTimezone(payload.timezone));
@@ -166,33 +169,31 @@ function setReportInterval(report_interval) {
 
 /**
  * set collection interval
+ * @param {number} index values: (1: pressure 1, 2: pressure 2)
  * @param {object} collection_interval
- * @param {number} collection_interval.pressure_1 unit: second, range: [10, 64800]
- * @param {number} collection_interval.pressure_2 unit: second, range: [10, 64800]
- * @example { "collection_interval": { "pressure_1": 300, "pressure_2": 300 } }
+ * @param {number} collection_interval.enable values: (0: disable, 1: enable)
+ * @param {number} collection_interval.collection_interval unit: second, range: [10, 64800]
+ * @example { "pressure_1_collection_interval": { "enable": 1, "collection_interval": 300 } }
  */
-function setCollectionInterval(collection_interval) {
-    var encoded = [];
-
-    if ("pressure_1" in collection_interval) {
-        encoded = encoded.concat(setCollectionInterval(1, collection_interval.pressure_1));
-    }
-    if ("pressure_2" in collection_interval) {
-        encoded = encoded.concat(setCollectionInterval(2, collection_interval.pressure_2));
-    }
-    return encoded;
-}
-
 function setCollectionInterval(index, collection_interval) {
-    if (collection_interval < 10 || collection_interval > 64800) {
-        throw new Error("collection_interval.pressure_" + index + " must be in range [10, 64800]");
+    var enable = collection_interval.enable;
+    var interval = collection_interval.collection_interval;
+
+    var enable_map = { 0: "disable", 1: "enable" };
+    var enable_values = getValues(enable_map);
+    if (enable_values.indexOf(enable) === -1) {
+        throw new Error("pressure_" + index + "_collection_interval.enable must be one of " + enable_values.join(", "));
+    }
+    if (interval < 10 || interval > 64800) {
+        throw new Error("pressure_" + index + "_collection_interval.collection_interval must be in range [10, 64800]");
     }
 
     var buffer = new Buffer(6);
-    buffer.writeUInt8(0xff);
-    buffer.writeUInt8(0xbb);
+    buffer.writeUInt8(0xf9);
+    buffer.writeUInt8(0x68);
     buffer.writeUInt8(index);
-    buffer.writeUInt16LE(collection_interval);
+    buffer.writeUInt8(getValue(enable_map, enable));
+    buffer.writeUInt16LE(interval);
     return buffer.toBytes();
 }
 
