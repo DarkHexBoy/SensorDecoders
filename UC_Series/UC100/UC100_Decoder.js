@@ -5,7 +5,7 @@
  *
  * @product UC100
  */
-var RAW_VALUE = 0x01;
+var RAW_VALUE = 0x00;
 
 // Chirpstack v4
 function decodeUplink(input) {
@@ -111,7 +111,7 @@ function milesightDeviceDecode(bytes) {
             decoded[channel_name] = readSensorStatus(1);
             i += 1;
         }
-        // MODBUS ALARM (only v1.7)
+        // MODBUS ALARM
         else if (channel_id === 0xff && channel_type === 0xee) {
             var chn_def = bytes[i++];
             var data_length = bytes[i++];
@@ -125,41 +125,27 @@ function milesightDeviceDecode(bytes) {
             var modbus_chn_name = "modbus_chn_" + modbus_chn_id;
             decoded[modbus_chn_name + "_alarm"] = readModbusAlarmType(modbus_alarm_value);
             switch (data_type) {
-                case 0: // MB_REG_COIL
-                case 1: // MB_REG_DISCRETE
+                case 0:
+                case 1:
                     decoded[modbus_chn_name] = readOnOffStatus(bytes[i]);
                     i += 1;
                     break;
-                case 2: // MB_REG_INPUT_AB
-                case 3: // MB_REG_INPUT_BA
-                case 14: // MB_REG_HOLD_INT16_AB
-                case 15: // MB_REG_HOLD_INT16_BA
+                case 2:
+                case 3:
                     decoded[modbus_chn_name] = sign ? readInt16LE(bytes.slice(i, i + 2)) : readUInt16LE(bytes.slice(i, i + 2));
                     i += 2;
                     break;
-                case 4: // MB_REG_INPUT_INT32_ABCD
-                case 5: // MB_REG_INPUT_INT32_BADC
-                case 6: // MB_REG_INPUT_INT32_CDAB
-                case 7: // MB_REG_INPUT_INT32_DCBA
-                case 16: // MB_REG_HOLD_INT32_ABCD
-                case 17: // MB_REG_HOLD_INT32_BADC
-                case 18: // MB_REG_HOLD_INT32_CDAB
-                case 19: // MB_REG_HOLD_INT32_DCBA
-                case 8: // MB_REG_INPUT_INT32_AB
-                case 9: // MB_REG_INPUT_INT32_CD
-                case 20: // MB_REG_HOLD_INT32_AB
-                case 21: // MB_REG_HOLD_INT32_CD
+                case 4:
+                case 6:
+                case 8:
+                case 9:
+                case 10:
+                case 11:
                     decoded[modbus_chn_name] = sign ? readInt32LE(bytes.slice(i, i + 4)) : readUInt32LE(bytes.slice(i, i + 4));
                     i += 4;
                     break;
-                case 10: // MB_REG_INPUT_FLOAT_ABCD
-                case 11: // MB_REG_INPUT_FLOAT_BADC
-                case 12: // MB_REG_INPUT_FLOAT_CDAB
-                case 13: // MB_REG_INPUT_FLOAT_DCBA
-                case 22: // MB_REG_HOLD_FLOAT_ABCD
-                case 23: // MB_REG_HOLD_FLOAT_BADC
-                case 24: // MB_REG_HOLD_FLOAT_CDAB
-                case 25: // MB_REG_HOLD_FLOAT_DCBA
+                case 5:
+                case 7:
                     decoded[modbus_chn_name] = readFloatLE(bytes.slice(i, i + 4));
                     i += 4;
                     break;
