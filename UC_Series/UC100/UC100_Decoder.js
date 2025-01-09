@@ -1,7 +1,7 @@
 /**
  * Payload Decoder
  *
- * Copyright 2024 Milesight IoT
+ * Copyright 2025 Milesight IoT
  *
  * @product UC100
  */
@@ -165,63 +165,17 @@ function milesightDeviceDecode(bytes) {
                     break;
             }
         }
-        // MODBUS MUTATION (v1.8+)
+        // MODBUS MUTATION (v1.9+)
         else if (channel_id === 0xf9 && channel_type === 0x5f) {
-            var chn_def = bytes[i++];
-            var data_length = bytes[i++];
-            var data_def = bytes[i++];
-
+            var chn_def = bytes[i];
             var modbus_chn_id = (chn_def & 0x3f) + 1;
             var modbus_alarm_value = chn_def >>> 6;
-            var sign = (data_def >>> 7) & 0x01;
-            var data_type = data_def & 0x7f;
-
             var modbus_chn_name = "modbus_chn_" + modbus_chn_id;
-            decoded[modbus_chn_name + "_alarm"] = readModbusAlarmType(modbus_alarm_value);
-            switch (data_type) {
-                case 0: // MB_REG_COIL
-                case 1: // MB_REG_DISCRETE
-                    decoded[modbus_chn_name] = readOnOffStatus(bytes[i]);
-                    i += 1;
-                    break;
-                case 2: // MB_REG_INPUT_AB
-                case 3: // MB_REG_INPUT_BA
-                case 14: // MB_REG_HOLD_INT16_AB
-                case 15: // MB_REG_HOLD_INT16_BA
-                    decoded[modbus_chn_name] = sign ? readInt16LE(bytes.slice(i, i + 2)) : readUInt16LE(bytes.slice(i, i + 2));
-                    i += 2;
-                    break;
-                case 4: // MB_REG_INPUT_INT32_ABCD
-                case 5: // MB_REG_INPUT_INT32_BADC
-                case 6: // MB_REG_INPUT_INT32_CDAB
-                case 7: // MB_REG_INPUT_INT32_DCBA
-                case 16: // MB_REG_HOLD_INT32_ABCD
-                case 17: // MB_REG_HOLD_INT32_BADC
-                case 18: // MB_REG_HOLD_INT32_CDAB
-                case 19: // MB_REG_HOLD_INT32_DCBA
-                case 8: // MB_REG_INPUT_INT32_AB
-                case 9: // MB_REG_INPUT_INT32_CD
-                case 20: // MB_REG_HOLD_INT32_AB
-                case 21: // MB_REG_HOLD_INT32_CD
-                    decoded[modbus_chn_name] = sign ? readInt32LE(bytes.slice(i, i + 4)) : readUInt32LE(bytes.slice(i, i + 4));
-                    i += 4;
-                    break;
-                case 10: // MB_REG_INPUT_FLOAT_ABCD
-                case 11: // MB_REG_INPUT_FLOAT_BADC
-                case 12: // MB_REG_INPUT_FLOAT_CDAB
-                case 13: // MB_REG_INPUT_FLOAT_DCBA
-                case 22: // MB_REG_HOLD_FLOAT_ABCD
-                case 23: // MB_REG_HOLD_FLOAT_BADC
-                case 24: // MB_REG_HOLD_FLOAT_CDAB
-                case 25: // MB_REG_HOLD_FLOAT_DCBA
-                    decoded[modbus_chn_name] = readFloatLE(bytes.slice(i, i + 4));
-                    i += 4;
-                    break;
-            }
             if (modbus_alarm_value === 3) {
-                decoded[modbus_chn_name + "_mutation"] = readFloatLE(bytes.slice(i, i + 4));
+                decoded[modbus_chn_name + "_alarm"] = readModbusAlarmType(modbus_alarm_value);
+                decoded[modbus_chn_name + "_mutation"] = readFloatLE(bytes.slice(i + 3, i + 7));
             }
-            i += 4;
+            i += 7;
         }
         // MODBUS HISTORY (v1.7+)
         else if (channel_id === 0x20 && channel_type === 0xce) {
