@@ -90,11 +90,14 @@ function milesightDeviceDecode(bytes) {
                     break;
                 case 4:
                 case 6:
+                    decoded[modbus_chn_name] = sign ? readInt32LE(bytes.slice(i, i + 4)) : readUInt32LE(bytes.slice(i, i + 4));
+                    i += 4;
+                    break;
                 case 8:
                 case 9:
                 case 10:
                 case 11:
-                    decoded[modbus_chn_name] = sign ? readInt32LE(bytes.slice(i, i + 4)) : readUInt32LE(bytes.slice(i, i + 4));
+                    decoded[modbus_chn_name] = sign ? readInt16LE(bytes.slice(i, i + 2)) : readUInt16LE(bytes.slice(i, i + 2));
                     i += 4;
                     break;
                 case 5:
@@ -137,11 +140,14 @@ function milesightDeviceDecode(bytes) {
                     break;
                 case 4:
                 case 6:
+                    decoded[modbus_chn_name] = sign ? readInt32LE(bytes.slice(i, i + 4)) : readUInt32LE(bytes.slice(i, i + 4));
+                    i += 4;
+                    break;
                 case 8:
                 case 9:
                 case 10:
                 case 11:
-                    decoded[modbus_chn_name] = sign ? readInt32LE(bytes.slice(i, i + 4)) : readUInt32LE(bytes.slice(i, i + 4));
+                    decoded[modbus_chn_name] = sign ? readInt16LE(bytes.slice(i, i + 2)) : readUInt16LE(bytes.slice(i, i + 2));
                     i += 4;
                     break;
                 case 5:
@@ -245,52 +251,6 @@ function milesightDeviceDecode(bytes) {
     return decoded;
 }
 
-function readUInt8(bytes) {
-    return bytes & 0xff;
-}
-
-function readInt8(bytes) {
-    var ref = readUInt8(bytes);
-    return ref > 0x7f ? ref - 0x100 : ref;
-}
-
-function readUInt16LE(bytes) {
-    var value = (bytes[1] << 8) + bytes[0];
-    return value & 0xffff;
-}
-
-function readInt16LE(bytes) {
-    var ref = readUInt16LE(bytes);
-    return ref > 0x7fff ? ref - 0x10000 : ref;
-}
-
-function readUInt32LE(bytes) {
-    var value = (bytes[3] << 24) + (bytes[2] << 16) + (bytes[1] << 8) + bytes[0];
-    return (value & 0xffffffff) >>> 0;
-}
-
-function readInt32LE(bytes) {
-    var ref = readUInt32LE(bytes);
-    return ref > 0x7fffffff ? ref - 0x100000000 : ref;
-}
-
-function readFloatLE(bytes) {
-    var bits = (bytes[3] << 24) | (bytes[2] << 16) | (bytes[1] << 8) | bytes[0];
-    var sign = bits >>> 31 === 0 ? 1.0 : -1.0;
-    var e = (bits >>> 23) & 0xff;
-    var m = e === 0 ? (bits & 0x7fffff) << 1 : (bits & 0x7fffff) | 0x800000;
-    var f = sign * m * Math.pow(2, e - 150);
-    return f;
-}
-
-function getValue(map, key) {
-    if (RAW_VALUE) return key;
-
-    var value = map[key];
-    if (!value) value = "unknown";
-    return value;
-}
-
 function readProtocolVersion(bytes) {
     var major = (bytes & 0xf0) >> 4;
     var minor = bytes & 0x0f;
@@ -334,42 +294,22 @@ function readLoRaWANClass(type) {
 }
 
 function readResetEvent(status) {
-    var status_map = {
-        0: "normal",
-        1: "reset",
-    };
+    var status_map = { 0: "normal", 1: "reset" };
     return getValue(status_map, status);
 }
 
 function readDeviceStatus(status) {
-    var status_map = {
-        0: "offline",
-        1: "online",
-    };
+    var status_map = { 0: "off", 1: "on" };
     return getValue(status_map, status);
 }
 
-function readAscii(bytes) {
-    var str = "";
-    for (var i = 0; i < bytes.length; i++) {
-        str += String.fromCharCode(bytes[i]);
-    }
-    return str;
-}
-
 function readSensorStatus(status) {
-    var status_map = {
-        0: "normal",
-        1: "read error",
-    };
+    var status_map = { 0: "normal", 1: "read error" };
     return getValue(status_map, status);
 }
 
 function readOnOffStatus(status) {
-    var status_map = {
-        0: "off",
-        1: "on",
-    };
+    var status_map = { 0: "off", 1: "on" };
     return getValue(status_map, status);
 }
 
@@ -381,4 +321,59 @@ function readModbusAlarmType(type) {
         3: "mutation alarm",
     };
     return getValue(alarm_type_map, type);
+}
+
+function readUInt8(bytes) {
+    return bytes & 0xff;
+}
+
+function readInt8(bytes) {
+    var ref = readUInt8(bytes);
+    return ref > 0x7f ? ref - 0x100 : ref;
+}
+
+function readUInt16LE(bytes) {
+    var value = (bytes[1] << 8) + bytes[0];
+    return value & 0xffff;
+}
+
+function readInt16LE(bytes) {
+    var ref = readUInt16LE(bytes);
+    return ref > 0x7fff ? ref - 0x10000 : ref;
+}
+
+function readUInt32LE(bytes) {
+    var value = (bytes[3] << 24) + (bytes[2] << 16) + (bytes[1] << 8) + bytes[0];
+    return (value & 0xffffffff) >>> 0;
+}
+
+function readInt32LE(bytes) {
+    var ref = readUInt32LE(bytes);
+    return ref > 0x7fffffff ? ref - 0x100000000 : ref;
+}
+
+function readFloatLE(bytes) {
+    var bits = (bytes[3] << 24) | (bytes[2] << 16) | (bytes[1] << 8) | bytes[0];
+    var sign = bits >>> 31 === 0 ? 1.0 : -1.0;
+    var e = (bits >>> 23) & 0xff;
+    var m = e === 0 ? (bits & 0x7fffff) << 1 : (bits & 0x7fffff) | 0x800000;
+    var f = sign * m * Math.pow(2, e - 150);
+    var n = Number(f.toFixed(2));
+    return n;
+}
+
+function readAscii(bytes) {
+    var str = "";
+    for (var i = 0; i < bytes.length; i++) {
+        str += String.fromCharCode(bytes[i]);
+    }
+    return str;
+}
+
+function getValue(map, key) {
+    if (RAW_VALUE) return key;
+
+    var value = map[key];
+    if (!value) value = "unknown";
+    return value;
 }
