@@ -580,13 +580,13 @@ function queryRuleConfig(query_rule_config) {
 /**
  * set rule config
  * @param {object} rule_config
- * @param {number} rule_config.index range: [1, 16]
+ * @param {number} rule_config.id range: [1, 16]
  * @param {number} rule_config.enable values: (0: disable, 1: enable)
  * @param {object} rule_config.condition
  * @param {object} rule_config.action
  */
 function setRuleConfig(rule_config) {
-    var index = rule_config.index;
+    var id = rule_config.id;
     var enable = rule_config.enable;
     var condition = rule_config.condition;
     var action = rule_config.action;
@@ -600,9 +600,9 @@ function setRuleConfig(rule_config) {
     var buffer = new Buffer(30);
     buffer.writeUInt8(0xff);
     buffer.writeUInt8(0x55);
-    buffer.writeUInt8(index); // set rule config
+    buffer.writeUInt8(id); // set rule config
     buffer.writeUInt8(getValue(enable_map, enable));
-    buffer.writeBytes(encodedCondition(condition));
+    buffer.writeBytes(encodedRuleCondition(condition));
     buffer.writeBytes(encodedAction(action));
     return buffer.toBytes();
 }
@@ -627,14 +627,13 @@ function setRuleConfig(rule_config) {
  * @param {number} condition.d2d_command
  * @param {number} condition.valve_index values: (1: valve 1, 2: valve 2)
  * @param {number} condition.duration unit: min
- * @param {number} condition.pressure_condition.pressure_index values: (1: pressure 1, 2: pressure 2)
- * @param {number} condition.pressure_condition.strategy values: (0: every change, 1: valve 1 open or valve 2 open, 2: valve ope
+ * @param {number} condition.pulse_threshold
  * @param {number} condition.valve_strategy values: (0: no strategy, 1: pressure strategy)
- * @param {number} condition.condition_type values: (0: no strategy, 1: pressure strategy)
+ * @param {number} condition.threshold_condition_type values: (0: none, 1: less than, 2: greater than, 3: between, 4: outside)
  * @param {number} condition.min_threshold unit: kPa
  * @param {number} condition.max_threshold unit: kPa
  */
-function encodedCondition(condition) {
+function encodedRuleCondition(condition) {
     var enable_map = { 0: "disable", 1: "enable" };
     var enable_values = getValues(enable_map);
     var condition_type_map = { 0: "none", 1: "time", 2: "d2d", 3: "time or pulse threshold", 4: "pulse threshold", 5: "pressure threshold" };
@@ -645,8 +644,8 @@ function encodedCondition(condition) {
     var weekday_values = getValues(weekday_bit_offset);
     var valve_strategy_map = { 0: "always", 1: "valve 1 open", 2: "valve 2 open", 3: "valve 1 open or valve 2 open" };
     var valve_strategy_values = getValues(valve_strategy_map);
-    var condition_type_map = { 0: "none", 1: "less than", 2: "greater than", 3: "between", 4: "outside" };
-    var condition_type_values = getValues(condition_type_map);
+    var threshold_condition_type_map = { 0: "none", 1: "less than", 2: "greater than", 3: "between", 4: "outside" };
+    var threshold_condition_type_values = getValues(threshold_condition_type_map);
 
     var buffer = new Buffer(13);
     var condition_type_value = getValue(condition_type_map, condition.type);
@@ -692,7 +691,7 @@ function encodedCondition(condition) {
         case 0x05: // pressure threshold condition
             buffer.writeUInt8(condition.valve_index);
             buffer.writeUInt8(getValue(valve_strategy_map, condition.valve_strategy));
-            buffer.writeUInt8(getValue(condition_type_map, condition.condition_type));
+            buffer.writeUInt8(getValue(threshold_condition_type_map, condition.threshold_condition_type));
             buffer.writeUInt16LE(condition.min_threshold);
             buffer.writeUInt16LE(condition.max_threshold);
             break;

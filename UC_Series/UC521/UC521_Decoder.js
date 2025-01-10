@@ -131,7 +131,7 @@ function milesightDeviceDecode(bytes) {
 
             var source_type = readSourceType(bytes[i]);
             var condition_type_value = bytes[i + 1];
-            var condition_type = readConditionType(condition_type_value);
+            var condition_type = readMathConditionType(condition_type_value);
             var min = readUInt16LE(bytes.slice(i + 2, i + 4));
             var max = readUInt16LE(bytes.slice(i + 4, i + 6));
             var pressure = readUInt16LE(bytes.slice(i + 6, i + 8));
@@ -260,7 +260,7 @@ function handle_downlink_response(channel_type, bytes, offset) {
             }
             offset += 3;
             break;
-        case 0x4e: // clear_valve_x_pulse
+        case 0x4e:
             var valve_index = readUInt8(bytes[offset]);
             var valve_index_name = "clear_valve_" + valve_index + "_pulse";
             // ignore the next byte
@@ -275,12 +275,12 @@ function handle_downlink_response(channel_type, bytes, offset) {
             break;
         case 0x53:
             decoded.query_rule_config = {};
-            decoded.query_rule_config.index = readUInt8(bytes[offset]);
+            decoded.query_rule_config.id = readUInt8(bytes[offset]);
             offset += 1;
             break;
         case 0x55:
             var rule_config = {};
-            rule_config.index = readUInt8(bytes[offset]);
+            rule_config.id = readUInt8(bytes[offset]) + 1;
             rule_config.enable = readEnableStatus(readUInt8(bytes[offset + 1]));
             rule_config.condition = readRuleCondition(bytes.slice(offset + 2, offset + 15));
             rule_config.action = readRuleAction(bytes.slice(offset + 15, offset + 28));
@@ -289,18 +289,18 @@ function handle_downlink_response(channel_type, bytes, offset) {
             decoded.rules_config = decoded.rules_config || [];
             decoded.rules_config.push(rule_config);
             break;
-        case 0x8e: // report_interval
+        case 0x8e:
             // ignore the first byte
             decoded.report_interval = readUInt16LE(bytes.slice(offset + 1, offset + 3));
             offset += 3;
             break;
-        case 0x92: // valve_x_pulse
+        case 0x92:
             var valve_index = readUInt8(bytes[offset]);
             var valve_index_name = "valve_" + valve_index + "_pulse";
             decoded[valve_index_name] = readUInt32LE(bytes.slice(offset + 1, offset + 5));
             offset += 5;
             break;
-        case 0xbd: // timezone
+        case 0xbd:
             decoded.timezone = readTimeZone(readInt16LE(bytes.slice(offset, offset + 2)));
             offset += 2;
             break;
@@ -358,11 +358,7 @@ function handle_downlink_response_ext(channel_type, bytes, offset) {
             }
             offset += 10;
             break;
-        case 0x55:
-            var valve_task_result = readUInt8(bytes[offset + 2]);
-
-            break;
-        case 0x5b: // pressure_x_calibration_config
+        case 0x5b:
             var pressure_calibration_result = readUInt8(bytes[offset + 4]);
             if (pressure_calibration_result === 0) {
                 var pressure_index = readUInt8(bytes[offset]);
@@ -456,16 +452,6 @@ function readSourceType(bytes) {
         3: "valve 1 opening or valve 2 opening",
     };
     return getValue(source_map, bytes);
-}
-
-function readConditionType(bytes) {
-    var condition_map = {
-        1: "pipe_pressure less than min",
-        2: "pipe_pressure more than max",
-        3: "pipe_pressure between min and max",
-        4: "pipe_pressure out of min and max",
-    };
-    return getValue(condition_map, bytes);
 }
 
 function readPressureAlarmType(bytes) {
@@ -566,7 +552,7 @@ function readRuleCondition(bytes) {
         case 0x05:
             condition.valve_index = readUInt8(bytes[offset]);
             condition.valve_strategy = readValveStrategy(readUInt8(bytes[offset + 1]));
-            condition.condition_type = readMathConditionType(readUInt8(bytes[offset + 2]));
+            condition.threshold_condition_type = readMathConditionType(readUInt8(bytes[offset + 2]));
             condition.min_threshold = readUInt16LE(bytes.slice(offset + 3, offset + 5));
             condition.max_threshold = readUInt16LE(bytes.slice(offset + 5, offset + 7));
             break;
