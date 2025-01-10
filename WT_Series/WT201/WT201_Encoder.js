@@ -1,11 +1,11 @@
 /**
  * Payload Encoder
  *
- * Copyright 2024 Milesight IoT
+ * Copyright 2025 Milesight IoT
  *
  * @product WT201
  */
-var RAW_VALUE = 0x01;
+var RAW_VALUE = 0x00;
 
 // Chirpstack v4
 function encodeDownlink(input) {
@@ -190,7 +190,7 @@ function reboot(reboot) {
 
 /**
  * report device status
- * @param {number} report_status values: (0: "plan", 1: "periodic")
+ * @param {number} report_status values: (0: plan, 1: periodic)
  * @example { "report_status": 1 }
  */
 function reportStatus(report_status) {
