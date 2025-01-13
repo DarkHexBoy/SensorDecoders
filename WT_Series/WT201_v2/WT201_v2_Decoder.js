@@ -182,12 +182,15 @@ function milesightDeviceDecode(bytes) {
         }
         // TEMPERATURE OUT OF RANGE ALARM
         else if (channel_id === 0xf9 && channel_type === 0x40) {
-            decoded.target_temperature_range_config = {};
-            decoded.target_temperature_range_config.temperature_control_mode = readTemperatureControlMode(bytes[i]);
-            decoded.target_temperature_range_config.target_temperature = readInt16LE(bytes.slice(i + 1, i + 3)) / 10;
-            decoded.target_temperature_range_config.min = readInt16LE(bytes.slice(i + 3, i + 5)) / 10;
-            decoded.target_temperature_range_config.max = readInt16LE(bytes.slice(i + 5, i + 7)) / 10;
+            var target_temperature_range_config = {};
+            target_temperature_range_config.temperature_control_mode = readTemperatureControlMode(bytes[i]);
+            target_temperature_range_config.target_temperature = readInt16LE(bytes.slice(i + 1, i + 3)) / 10;
+            target_temperature_range_config.min = readInt16LE(bytes.slice(i + 3, i + 5)) / 10;
+            target_temperature_range_config.max = readInt16LE(bytes.slice(i + 5, i + 7)) / 10;
             i += 7;
+
+            decoded.target_temperature_range_config = decoded.target_temperature_range_config || [];
+            decoded.target_temperature_range_config.push(target_temperature_range_config);
         }
         // HISTORICAL DATA
         else if (channel_id === 0x20 && channel_type === 0xce) {
