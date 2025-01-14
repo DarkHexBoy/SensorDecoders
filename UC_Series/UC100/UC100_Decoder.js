@@ -185,6 +185,7 @@ function milesightDeviceDecode(bytes) {
             // READ FAILED
             if (read_status === 0) {
                 data[modbus_chn_name + "_alarm"] = readSensorStatus(1);
+                i += 4;
             } else {
                 switch (data_type) {
                     case 0: // MB_REG_COIL
@@ -196,6 +197,9 @@ function milesightDeviceDecode(bytes) {
                     case 3: // MB_REG_INPUT_BA
                     case 14: // MB_REG_HOLD_INT16_AB
                     case 15: // MB_REG_HOLD_INT16_BA
+                        data[modbus_chn_name] = sign ? readInt32LE(bytes.slice(i, i + 4)) : readUInt32LE(bytes.slice(i, i + 4));
+                        i += 4;
+                        break;
                     case 4: // MB_REG_INPUT_INT32_ABCD
                     case 5: // MB_REG_INPUT_INT32_BADC
                     case 6: // MB_REG_INPUT_INT32_CDAB
@@ -204,11 +208,14 @@ function milesightDeviceDecode(bytes) {
                     case 17: // MB_REG_HOLD_INT32_BADC
                     case 18: // MB_REG_HOLD_INT32_CDAB
                     case 19: // MB_REG_HOLD_INT32_DCBA
+                        data[modbus_chn_name] = sign ? readInt32LE(bytes.slice(i, i + 4)) : readUInt32LE(bytes.slice(i, i + 4));
+                        i += 4;
+                        break;
                     case 8: // MB_REG_INPUT_INT32_AB
                     case 9: // MB_REG_INPUT_INT32_CD
                     case 20: // MB_REG_HOLD_INT32_AB
                     case 21: // MB_REG_HOLD_INT32_CD
-                        data[modbus_chn_name] = sign ? readInt32LE(bytes.slice(i, i + 4)) : readUInt32LE(bytes.slice(i, i + 4));
+                        data[modbus_chn_name] = sign ? readInt16LE(bytes.slice(i, i + 2)) : readUInt16LE(bytes.slice(i, i + 2));
                         i += 4;
                         break;
                     case 10: // MB_REG_INPUT_FLOAT_ABCD
