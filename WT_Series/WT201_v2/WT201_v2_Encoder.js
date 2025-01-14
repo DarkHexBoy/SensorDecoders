@@ -1243,7 +1243,7 @@ function setCardConfig(card_config) {
     }
 
     var action = 0x00;
-    if (getValue(card_config_action_type_map, action_type)) {
+    if (getValue(card_config_action_type_map, action_type) === 1) {
         var card_config_plan_type_map = { 0: "wake", 1: "away", 2: "home", 3: "sleep", 4: "occupied", 5: "vacant", 6: "eco" };
         var card_config_plan_type_values = getValues(card_config_plan_type_map);
         if (card_config_plan_type_values.indexOf(in_plan_type) === -1) {
@@ -1414,7 +1414,7 @@ function setCompressorAndAuxCombineEnable(compressor_aux_combine_enable) {
  * @since v2.0
  * @param {object} system_protect_config
  * @param {number} system_protect_config.enable values: (0: disable, 1: enable)
- * @param {number} system_protect_config.duration unit: minute, range: [5, 55]
+ * @param {number} system_protect_config.duration unit: minute, range: [1, 60]
  * @example { "system_protect_config": { "enable": 1, "duration": 10 } }
  */
 function setSystemProtectConfig(system_protect_config) {
@@ -1426,8 +1426,8 @@ function setSystemProtectConfig(system_protect_config) {
     if (enable_values.indexOf(enable) === -1) {
         throw new Error("system_protect_config.enable must be one of " + enable_values.join(", "));
     }
-    if (typeof duration !== "number" || duration < 5 || duration > 55) {
-        throw new Error("system_protect_config.duration must be a number, range: [5, 55]");
+    if (typeof duration !== "number" || duration < 1 || duration > 60) {
+        throw new Error("system_protect_config.duration must be a number, range: [1, 60]");
     }
 
     var buffer = new Buffer(4);
