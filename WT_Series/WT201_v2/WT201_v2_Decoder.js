@@ -166,8 +166,8 @@ function milesightDeviceDecode(bytes) {
         }
         // SINGLE TEMPERATURE PLAN CONFIG
         else if (channel_id === 0xf9 && channel_type === 0x5e) {
-            var single_temperature_plan_config = readSingleTemperaturePlanConfig(bytes.slice(i, i + 9));
-            i += 9;
+            var single_temperature_plan_config = readSingleTemperaturePlanConfig(bytes.slice(i, i + 7));
+            i += 7;
 
             decoded.single_temperature_plan_config = decoded.single_temperature_plan_config || [];
             decoded.single_temperature_plan_config.push(single_temperature_plan_config);
