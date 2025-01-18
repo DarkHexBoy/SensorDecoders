@@ -56,12 +56,6 @@ function milesightDeviceEncode(payload) {
     if ("reset_button_enable" in payload) {
         encoded = encoded.concat(setResetButtonEnable(payload.reset_button_enable));
     }
-    if ("power_consumption_enable" in payload) {
-        encoded = encoded.concat(setPowerConsumptionEnable(payload.power_consumption_enable));
-    }
-    if ("clear_power_consumption" in payload) {
-        encoded = encoded.concat(clearPowerConsumption(payload.clear_power_consumption));
-    }
     if ("sync_time" in payload) {
         encoded = encoded.concat(syncTime(payload.sync_time));
     }
@@ -310,44 +304,6 @@ function setChildLockConfig(child_lock_config) {
     buffer.writeUInt16LE(data);
     return buffer.toBytes();
 }
-
-/**
- * power consumption Configuration
- * @param {number} power_consumption_enable values: (0: disable, 1: enable)
- * @example { "power_consumption_enable": 1 }
- */
-function setPowerConsumptionEnable(power_consumption_enable) {
-    var enable_map = { 0: "disable", 1: "enable" };
-    var enable_values = getValues(enable_map);
-    if (enable_values.indexOf(power_consumption_enable) === -1) {
-        throw new Error("power_consumption_enable must be one of: " + enable_values.join(", "));
-    }
-
-    var buffer = new Buffer(3);
-    buffer.writeUInt8(0xff);
-    buffer.writeUInt8(0x26);
-    buffer.writeUInt8(getValue(enable_map, power_consumption_enable));
-    return buffer.toBytes();
-}
-
-/**
- * clear power consumption
- * @param {number} clear_power_consumption values: (0: no, 1: yes)
- * @example { "clear_power_consumption": 1 }
- */
-function clearPowerConsumption(clear_power_consumption) {
-    var yes_no_map = { 0: "no", 1: "yes" };
-    var yes_no_values = getValues(yes_no_map);
-    if (yes_no_values.indexOf(clear_power_consumption) === -1) {
-        throw new Error("clear_power_consumption must be one of: " + yes_no_values.join(", "));
-    }
-
-    if (getValue(yes_no_map, clear_power_consumption) === 0) {
-        return [];
-    }
-    return [0xff, 0x27, 0xff];
-}
-
 /**
  * set rule config
  * @since v1.3
@@ -454,12 +410,12 @@ function setRuleConfig(rule_config) {
  * @example { "query_rule_config_request": { "rule_1": 1, "rule_2": 1, "rule_3": 1, "rule_4": 1, "rule_5": 1, "rule_6": 1, "rule_7": 1, "rule_8": 1 } }
  */
 function queryRuleConfig(query_rule_config_request) {
-    var channel_index_map = { channel_1: 1, channel_2: 2, channel_3: 3, channel_4: 4, channel_5: 5, channel_6: 6, channel_7: 7, channel_8: 8 };
+    var channel_index_map = { rule_1: 1, rule_2: 2, rule_3: 3, rule_4: 4, rule_5: 5, rule_6: 6, rule_7: 7, rule_8: 8 };
     var yes_no_map = { 0: "no", 1: "yes" };
     var yes_no_values = getValues(yes_no_map);
 
     var data = [];
-    for (var key in query_rule_config_request) {
+    for (var key in channel_index_map) {
         if (key in query_rule_config_request) {
             if (yes_no_values.indexOf(query_rule_config_request[key]) === -1) {
                 throw new Error("query_rule_config_request." + key + " must be one of " + yes_no_values.join(", "));

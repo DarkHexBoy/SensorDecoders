@@ -142,19 +142,11 @@ function handle_downlink_response(channel_type, bytes, offset) {
             decoded.child_lock_config.lock_time = data & 0x7fff;
             offset += 2;
             break;
-        case 0x26:
-            decoded.power_consumption_enable = readEnableStatus(bytes[offset]);
-            offset += 1;
-            break;
-        case 0x27:
-            decoded.clear_power_consumption = readYesNoStatus(1);
-            offset += 1;
-            break;
         case 0x2f:
             decoded.led_mode = readLedMode(bytes[offset]);
             offset += 1;
             break;
-        case 0x4a: // sync_time
+        case 0x4a:
             decoded.sync_time = readYesNoStatus(1);
             offset += 1;
             break;
